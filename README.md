@@ -27,3 +27,11 @@
 
  - Оценка складывается следующим образом: (github_api * 0.15 + git * 0.25 + enry * 0.2 + tree_sitter * 0.25 + similar_dev_search * 0.15) * 8 + (tests + style_check + docker) * 2/3
  - Каждый пункт - одно из домашних заданий
+
+
+##  Первая итерация - учимся извлекать сущности на scikit-learn:
+```shell
+!git clone https://github.com/scikit-learn/scikit-learn
+
+PYTHONPATH=./ python3 devsearch/cli/run.py extract https://github.com/scikit-learn/scikit-learn /mnt/c/Users/maxma/Documents/scikit-learn
+```
