@@ -7,9 +7,10 @@ def handle_commit(commit):
     print(commit.author)
 
 
-def extract_repo(git_path: str, target_path: str):
+def extract_repo(git_path: str, target_path: str, should_clone=False):
     try:
-        porcelain.clone(git_path, target_path)
+        if should_clone:
+            porcelain.clone(git_path, target_path)
     except Exception as e:
         print(f"An exception occured: {e}")
 

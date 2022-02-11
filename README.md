@@ -30,8 +30,14 @@
 
 
 ##  Первая итерация - учимся извлекать сущности на scikit-learn:
+Если хочу отдельно скачать:
 ```shell
 !git clone https://github.com/scikit-learn/scikit-learn
 
-PYTHONPATH=./ python3 devsearch/cli/run.py extract https://github.com/scikit-learn/scikit-learn /mnt/c/Users/maxma/Documents/scikit-learn
+PYTHONPATH=./ python3 devsearch/cli/run.py extract - /mnt/c/Users/maxma/Documents/scikit-learn
+```
+
+Если хочу сразу скачать:
+```shell
+PYTHONPATH=./ python3 devsearch/cli/run.py extract https://github.com/scikit-learn/scikit-learn /mnt/c/Users/maxma/Documents/scikit-learn 1
 ```
