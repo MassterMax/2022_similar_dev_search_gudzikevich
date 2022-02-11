@@ -34,10 +34,10 @@
 ```shell
 !git clone https://github.com/scikit-learn/scikit-learn
 
-PYTHONPATH=./ python3 devsearch/cli/run.py extract - /mnt/c/Users/maxma/Documents/scikit-learn
+PYTHONPATH=./ python3 devsearch/cli/run.py extract - /mnt/c/Users/maxma/Documents/GitHub/scikit-learn
 ```
 
 Если хочу сразу скачать:
 ```shell
-PYTHONPATH=./ python3 devsearch/cli/run.py extract https://github.com/scikit-learn/scikit-learn /mnt/c/Users/maxma/Documents/scikit-learn 1
+PYTHONPATH=./ python3 devsearch/cli/run.py extract https://github.com/scikit-learn/scikit-learn /mnt/c/Users/maxma/Documents/GitHub/scikit-learn 1
 ```
