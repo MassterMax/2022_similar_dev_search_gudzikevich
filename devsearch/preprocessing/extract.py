@@ -3,11 +3,10 @@ from dulwich.repo import Repo
 
 
 def handle_commit(commit):
-    print(commit.id)
-    print(commit.author)
+    print(f'author: {commit.author.decode()}, sha: {commit.id.decode()}')
 
 
-def extract_repo(git_path: str, target_path: str, should_clone=False):
+def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
     try:
         if should_clone:
             porcelain.clone(git_path, target_path)
@@ -16,4 +15,7 @@ def extract_repo(git_path: str, target_path: str, should_clone=False):
 
     repo = Repo(target_path)
     for entry in repo.get_walker():
+        limit -= 1
         handle_commit(entry.commit)
+        if limit == 0:
+            break
