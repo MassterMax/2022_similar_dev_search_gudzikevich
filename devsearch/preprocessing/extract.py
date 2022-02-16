@@ -1,9 +1,27 @@
 import difflib
+import json
+from typing import Dict
 
 from dulwich import porcelain
 from dulwich.objects import Commit, ShaFile
 from dulwich.repo import Repo
 from dulwich.walk import WalkEntry
+
+SUPPORTED_EXTENSIONS = {".py"}
+
+
+def handle_blob(old_blob, new_blob) -> Dict:
+    differences = difflib.unified_diff(old_blob.data.decode().splitlines(), new_blob.data.decode().splitlines())
+
+    rows_added = 0
+    rows_deleted = 0
+    for el in list(differences):
+        if el.startswith("+") and not el.startswith("++"):
+            rows_added += 1
+        elif el.startswith("-") and not el.startswith("--"):
+            rows_deleted += 1
+
+    return {"added": rows_added, "deleted": rows_deleted}
 
 
 def handle_entry(repo: Repo, entry: WalkEntry):
@@ -17,22 +35,47 @@ def handle_entry(repo: Repo, entry: WalkEntry):
 
     """
 
+    data = []
     commit: Commit = entry.commit
-    print(f"total files changed in this commit: {len(entry.changes())}")
-    print(f"author: {commit.author.decode()}, sha: {commit.id.decode()}")
-    print(f"first change: {entry.changes()[0]}")
-    print((entry.changes()[0]).new.sha)
 
-    # get first blobs
-    old_blob: ShaFile = repo.get_object((entry.changes()[0]).old.sha)
-    new_blob: ShaFile = repo.get_object((entry.changes()[0]).new.sha)
+    repo_url = (repo.get_config().get((b'remote', b'origin'), b'url')).decode()
 
-    differences = difflib.unified_diff(old_blob.data.decode().splitlines(), new_blob.data.decode().splitlines())
-    print(*list(differences), sep="\n")
-    print("\n"*3)
+    author = commit.author.decode()
+    commit_sha = commit.id.decode()
+
+    for changes in entry.changes():
+        # for some reason change could be a sequence of changes
+        if not isinstance(changes, list):
+            changes = [changes]
+
+        for change in changes:
+            # we ignore file deleting and creating
+            if change.old.path is None or change.new.path is None:
+                continue
+
+            # we process only some extensions
+            if not change.new.path.decode().endswith(tuple(SUPPORTED_EXTENSIONS)):
+                continue
+
+            path = f"{repo_url}/blob/{commit.id.decode()}/{change.new.path.decode()}"
+            # print(path)
+
+            old_blob: ShaFile = repo.get_object(change.old.sha)
+            new_blob: ShaFile = repo.get_object(change.new.sha)
+
+            new_entity = {"author": author,
+                          "commit_sha": commit_sha,
+                          "path": path,
+                          "repo_url": repo_url,
+                          "blob_id": change.new.sha.decode()}
+
+            temp = {**new_entity, **handle_blob(old_blob, new_blob)}
+            data.append(temp)
+
+    return data
 
 
-def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
+def extract_repo(git_path: str, target_path: str, should_clone=False, limit=100000):
     """
     A method to extract data from one repository
     Args:
@@ -48,14 +91,18 @@ def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
         porcelain.clone(git_path, target_path)
 
     repo = Repo(target_path)
+    total_changes = 0
+    total_size = 0
+
     for i, entry in enumerate(repo.get_walker()):
         if limit == i:
             break
 
         entry: WalkEntry
-        handle_entry(repo, entry)
+        data = handle_entry(repo, entry)
+        total_changes += len(data)
+        total_size += len(json.dumps(data))
 
-        # print(entry.changes()[0])
-
-        # print(repo.get_object(b"6307262210f041886275b3199abf440b5c4006b1").data.decode())
-        # dulwich.patch.unified_diff(blob1, blob2)
+    print(i)
+    print(f"total changes: {total_changes}")
+    print(f"total serialized size: {total_size}B, that is {total_size / 1024 / 1024}MB")
