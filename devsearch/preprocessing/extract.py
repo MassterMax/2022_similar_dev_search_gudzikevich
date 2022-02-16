@@ -1,21 +1,46 @@
 from dulwich import porcelain
+from dulwich.objects import Commit
 from dulwich.repo import Repo
+from dulwich.walk import WalkEntry
 
 
-def handle_commit(commit):
+def handle_commit(commit: Commit):
+    """
+    A method to handle one commit
+    Args:
+        commit: commit to handle
+
+    Returns: meta-information about commit
+
+    """
     print(f'author: {commit.author.decode()}, sha: {commit.id.decode()}')
 
 
 def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
-    try:
-        if should_clone:
-            porcelain.clone(git_path, target_path)
-    except Exception as e:
-        print(f"An exception occured: {e}")
+    """
+    A method to extract data from one repository
+    Args:
+        git_path: GitHub URL path
+        target_path: A path where to store Git repo on disk
+        should_clone: If should clone GitHub then clone else repo should be in target path
+        limit: Limit of processed commits
+
+    Returns:
+
+    """
+    if should_clone:
+        porcelain.clone(git_path, target_path)
 
     repo = Repo(target_path)
-    for entry in repo.get_walker():
-        limit -= 1
-        handle_commit(entry.commit)
-        if limit == 0:
+    for i, entry in enumerate(repo.get_walker()):
+        if limit == i:
             break
+
+        entry: WalkEntry
+        # handle_commit(entry.commit)
+
+        # print(entry.changes()[0])
+        print(len(entry.changes()))
+
+        # print(repo.get_object(b"6307262210f041886275b3199abf440b5c4006b1").data.decode())
+        # dulwich.patch.unified_diff(blob1, blob2)

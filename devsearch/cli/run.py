@@ -9,12 +9,6 @@ def cli():
 
 
 @cli.command()
-@click.argument("message")
-def hello(message: str):
-    print(f"you wrote: {message}")
-
-
-@cli.command()
 @click.argument("git_path")
 @click.argument("target_path", type=click.Path())
 def extract(git_path: str, target_path: str):
