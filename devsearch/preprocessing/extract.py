@@ -1,23 +1,35 @@
+import difflib
+
 from dulwich import porcelain
-from dulwich.objects import Commit
+from dulwich.objects import Commit, ShaFile
 from dulwich.repo import Repo
 from dulwich.walk import WalkEntry
 
 
-def handle_entry(entry: WalkEntry):
+def handle_entry(repo: Repo, entry: WalkEntry):
     """
     A method to handle one WalkEntry
     Args:
+        repo: repo that we handle
         entry: entry to handle
 
     Returns: meta-information about entry
 
     """
 
-    commit = entry.commit
-    print(f'total files changed in this commit: {len(entry.changes())}')
-    print(f'author: {commit.author.decode()}, sha: {commit.id.decode()}')
-    print()
+    commit: Commit = entry.commit
+    print(f"total files changed in this commit: {len(entry.changes())}")
+    print(f"author: {commit.author.decode()}, sha: {commit.id.decode()}")
+    print(f"first change: {entry.changes()[0]}")
+    print((entry.changes()[0]).new.sha)
+
+    # get first blobs
+    old_blob: ShaFile = repo.get_object((entry.changes()[0]).old.sha)
+    new_blob: ShaFile = repo.get_object((entry.changes()[0]).new.sha)
+
+    differences = difflib.unified_diff(old_blob.data.decode().splitlines(), new_blob.data.decode().splitlines())
+    print(*list(differences), sep="\n")
+    print("\n"*3)
 
 
 def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
@@ -41,7 +53,7 @@ def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
             break
 
         entry: WalkEntry
-        handle_entry(entry)
+        handle_entry(repo, entry)
 
         # print(entry.changes()[0])
 
