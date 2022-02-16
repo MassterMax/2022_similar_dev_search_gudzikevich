@@ -4,16 +4,20 @@ from dulwich.repo import Repo
 from dulwich.walk import WalkEntry
 
 
-def handle_commit(commit: Commit):
+def handle_entry(entry: WalkEntry):
     """
-    A method to handle one commit
+    A method to handle one WalkEntry
     Args:
-        commit: commit to handle
+        entry: entry to handle
 
-    Returns: meta-information about commit
+    Returns: meta-information about entry
 
     """
+
+    commit = entry.commit
+    print(f'total files changed in this commit: {len(entry.changes())}')
     print(f'author: {commit.author.decode()}, sha: {commit.id.decode()}')
+    print()
 
 
 def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
@@ -37,10 +41,9 @@ def extract_repo(git_path: str, target_path: str, should_clone=False, limit=10):
             break
 
         entry: WalkEntry
-        # handle_commit(entry.commit)
+        handle_entry(entry)
 
         # print(entry.changes()[0])
-        print(len(entry.changes()))
 
         # print(repo.get_object(b"6307262210f041886275b3199abf440b5c4006b1").data.decode())
         # dulwich.patch.unified_diff(blob1, blob2)
