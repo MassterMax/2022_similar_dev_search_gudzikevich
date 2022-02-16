@@ -103,6 +103,5 @@ def extract_repo(git_path: str, target_path: str, should_clone=False, limit=1000
         total_changes += len(data)
         total_size += len(json.dumps(data))
 
-    print(i)
     print(f"total changes: {total_changes}")
     print(f"total serialized size: {total_size}B, that is {total_size / 1024 / 1024}MB")
