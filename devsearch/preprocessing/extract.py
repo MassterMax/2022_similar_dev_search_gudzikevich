@@ -6,11 +6,21 @@ from dulwich import porcelain
 from dulwich.objects import Commit, ShaFile
 from dulwich.repo import Repo
 from dulwich.walk import WalkEntry
+from tqdm import tqdm
 
 SUPPORTED_EXTENSIONS = {".py"}
 
 
 def handle_blob(old_blob, new_blob) -> Dict:
+    """
+    A method that gives blob differences
+    Args:
+        old_blob: one blob
+        new_blob: another blob
+
+    Returns: {"added": rows_added, "deleted": rows_deleted}
+
+    """
     differences = difflib.unified_diff(old_blob.data.decode().splitlines(), new_blob.data.decode().splitlines())
 
     rows_added = 0
@@ -75,14 +85,13 @@ def handle_entry(repo: Repo, entry: WalkEntry):
     return data
 
 
-def extract_repo(git_path: str, target_path: str, should_clone=False, limit=100000):
+def extract_repo(git_path: str, target_path: str, should_clone=False):
     """
     A method to extract data from one repository
     Args:
         git_path: GitHub URL path
         target_path: A path where to store Git repo on disk
         should_clone: If should clone GitHub then clone else repo should be in target path
-        limit: Limit of processed commits
 
     Returns:
 
@@ -93,15 +102,15 @@ def extract_repo(git_path: str, target_path: str, should_clone=False, limit=1000
     repo = Repo(target_path)
     total_changes = 0
     total_size = 0
+    extracted_data = []
 
-    for i, entry in enumerate(repo.get_walker()):
-        if limit == i:
-            break
-
+    for entry in tqdm(repo.get_walker()):
         entry: WalkEntry
         data = handle_entry(repo, entry)
         total_changes += len(data)
         total_size += len(json.dumps(data))
+        extracted_data.extend(data)
 
     print(f"total changes: {total_changes}")
     print(f"total serialized size: {total_size}B, that is {total_size / 1024 / 1024}MB")
+    return extracted_data
