@@ -38,10 +38,10 @@
 ```shell
 !git clone https://github.com/scikit-learn/scikit-learn 
 
-PYTHONPATH=./ python3 devsearch/cli/run.py extract - /mnt/c/Users/maxma/Documents/GitHub/scikit-learn
+PYTHONPATH=./ python3 devsearch/cli/run.py extract - /mnt/c/Users/maxma/Documents/GitHub/scikit-learn devsearch/preprocessing/output.json
 ```
 
-Если хочу сразу скачать:
+Если хочу сразу скачать (вообще пока лучше без этого, оно не работает):
 ```shell
 PYTHONPATH=./ python3 devsearch/cli/run.py extract https://github.com/scikit-learn/scikit-learn /mnt/c/Users/maxma/Documents/GitHub/scikit-learn 1
 ```
