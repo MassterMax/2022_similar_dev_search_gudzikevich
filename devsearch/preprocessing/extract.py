@@ -1,8 +1,10 @@
+from collections import defaultdict
 import difflib
 import json
-from typing import Dict
+from typing import Any, Dict, Iterator, List, Union
 
 from dulwich import porcelain
+from dulwich.diff_tree import TreeChange
 from dulwich.objects import Commit, ShaFile
 from dulwich.repo import Repo
 from dulwich.walk import WalkEntry
@@ -11,83 +13,53 @@ from tqdm import tqdm
 SUPPORTED_EXTENSIONS = {".py"}
 
 
-def handle_blob(old_blob, new_blob) -> Dict:
+def get_change_differences(repo: Repo, change: TreeChange) -> Dict[str, int]:
     """
-    A method that gives blob differences
-    Args:
-        old_blob: one blob
-        new_blob: another blob
-
-    Returns: {"added": rows_added, "deleted": rows_deleted}
-
-    """
-    differences = difflib.unified_diff(old_blob.data.decode().splitlines(), new_blob.data.decode().splitlines())
-
-    rows_added = 0
-    rows_deleted = 0
-    for el in list(differences):
-        if el.startswith("+") and not el.startswith("++"):
-            rows_added += 1
-        elif el.startswith("-") and not el.startswith("--"):
-            rows_deleted += 1
-
-    return {"added": rows_added, "deleted": rows_deleted}
-
-
-def handle_entry(repo: Repo, entry: WalkEntry):
-    """
-    A method to handle one WalkEntry
+    A method that gives differences in one change
     Args:
         repo: repo that we handle
-        entry: entry to handle
-
-    Returns: meta-information about entry
-
+        change: change of this repo
+    Returns: {"added": rows_added, "deleted": rows_deleted}
     """
+    counter = defaultdict(int)
 
-    data = []
-    commit: Commit = entry.commit
+    if change.old.sha is None:
+        # file was created
+        new_blob: ShaFile = repo.get_object(change.new.sha)
+        counter["added"] = len(new_blob.data.decode().splitlines())
+        counter["rows_deleted"] = 0
+    elif change.new.sha is None:
+        # file was deleted
+        old_blob: ShaFile = repo.get_object(change.old.sha)
+        counter["added"] = 0
+        counter["rows_deleted"] = len(old_blob.data.decode().splitlines())
+    if not (change.old.sha is None or change.new.sha is None):
+        old_blob: ShaFile = repo.get_object(change.old.sha)
+        new_blob: ShaFile = repo.get_object(change.new.sha)
 
-    repo_url = (repo.get_config().get((b'remote', b'origin'), b'url')).decode()
+        differences = difflib.unified_diff(old_blob.data.decode().splitlines(), new_blob.data.decode().splitlines())
 
-    author = commit.author.decode()
-    commit_sha = commit.id.decode()
+        for el in differences:
+            if el.startswith("+") and not el.startswith("++"):
+                counter["added"] += 1
+            elif el.startswith("-") and not el.startswith("--"):
+                counter["deleted"] += 1
 
-    for changes in entry.changes():
-        # for some reason change could be a sequence of changes
-        if not isinstance(changes, list):
-            changes = [changes]
-
-        for change in changes:
-            # we ignore file deleting and creating
-            if change.old.path is None or change.new.path is None:
-                continue
-
-            # we process only some extensions
-            if not change.new.path.decode().endswith(tuple(SUPPORTED_EXTENSIONS)):
-                continue
-
-            path = f"{repo_url}/blob/{commit.id.decode()}/{change.new.path.decode()}"
-            # print(path)
-
-            old_blob: ShaFile = repo.get_object(change.old.sha)
-            new_blob: ShaFile = repo.get_object(change.new.sha)
-
-            new_entity = {"author": author,
-                          "commit_sha": commit_sha,
-                          "path": path,
-                          "repo_url": repo_url,
-                          "blob_id": change.new.sha.decode()}
-
-            temp = {**new_entity, **handle_blob(old_blob, new_blob)}
-            data.append(temp)
-
-    return data
+    return counter
 
 
-def extract_repo(git_path: str, target_path: str, should_clone=False):
+def extract_repo(git_path: str, target_path: str, should_clone=False) -> Iterator[Dict[str, Any]]:
     """
-    A method to extract data from one repository
+    A method to extract following data from one repository and return it iteratively:
+
+    {"author": author of commit,
+     "commit_sha": commit sha,
+     "path": path to changed file,
+     "repo_url": url of repository,
+     "blob_id": blob id,
+     "added": rows that were added,
+     "deleted": rows that were deleted}
+
     Args:
         git_path: GitHub URL path
         target_path: A path where to store Git repo on disk
@@ -100,17 +72,53 @@ def extract_repo(git_path: str, target_path: str, should_clone=False):
         porcelain.clone(git_path, target_path)
 
     repo = Repo(target_path)
-    total_changes = 0
-    total_size = 0
-    extracted_data = []
+    repo_url = (repo.get_config().get((b"remote", b"origin"), b"url")).decode()
 
     for entry in tqdm(repo.get_walker()):
         entry: WalkEntry
-        data = handle_entry(repo, entry)
-        total_changes += len(data)
-        total_size += len(json.dumps(data))
-        extracted_data.extend(data)
+        commit: Commit = entry.commit
 
-    print(f"total changes: {total_changes}")
-    print(f"total serialized size: {total_size}B, that is {total_size / 1024 / 1024}MB")
-    return extracted_data
+        author = commit.author.decode()
+        commit_sha = commit.id.decode()
+
+        for change_sequence in entry.changes():
+            # for some reason change could be a sequence of changes - despite it is a single commit
+            if not isinstance(change_sequence, list):
+                change_sequence = [change_sequence]
+
+            for change in change_sequence:
+                file_name = change.new.path or change.old.path
+                file_name = file_name.decode()
+
+                # print(file_name)
+                # we process only some extensions todo
+                if not file_name.endswith(tuple(SUPPORTED_EXTENSIONS)):
+                    continue
+
+                path = f"{repo_url}/blob/{commit_sha}/{file_name}"
+                blob_id = change.new.sha or change.old.sha
+                blob_id = blob_id.decode()
+
+                new_entity = {"author": author,
+                              "commit_sha": commit_sha,
+                              "path": path,
+                              "repo_url": repo_url,
+                              "blob_id": blob_id}
+                new_entity.update(get_change_differences(repo, change))
+
+                yield new_entity
+
+
+def save_data_as_json(data: Union[List, Dict], path: str) -> None:
+    """
+    A method to serialize json-like object
+    Args:
+        data: data to save
+        path: path to save like C:/path/to/file.jsonl
+
+    """
+    assert path.endswith("jsonl")
+
+    with open(path, "a") as fp:
+        fp.write(json.dumps(data))
+        fp.write("\n")
