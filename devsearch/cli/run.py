@@ -1,6 +1,6 @@
 import click
 
-from devsearch.preprocessing.extract import extract_repo, save_data_as_json
+from devsearch.preprocessing.extract import extract_repo, process_stargazers, save_data_as_json
 
 
 @click.group()
@@ -24,6 +24,12 @@ def extract(local_path: str, output_path: str) -> None:
     for list_entity in extract_repo(local_path):
         for dict_entity in list_entity:
             save_data_as_json(dict_entity, output_path)
+
+
+@cli.command()
+@click.argument("git_path")
+def extract_stargazers(git_path: str) -> None:
+    process_stargazers(git_path)
 
 
 if __name__ == "__main__":
