@@ -27,9 +27,14 @@ def extract(local_path: str, output_path: str) -> None:
 
 
 @cli.command()
-@click.argument("git_path")
-def extract_stargazers(git_path: str) -> None:
-    process_stargazers(git_path)
+@click.argument("repo_name")
+def extract_stargazers(repo_name: str) -> None:
+    """
+    A method that calls process_stargazers
+    Args:
+        repo_name: name of the repo to handle
+    """
+    process_stargazers(repo_name)
 
 
 if __name__ == "__main__":
