@@ -23,6 +23,7 @@ def extract(git_path: str, target_path: str, output_path: str) -> None:
         target_path: Where to store (if not stored yet) the repository on your device
         output_path: path to serialize output, C:/path/to/result.json like
     """
+    # todo lock on write
     for data in extract_repo(git_path, target_path):
         save_data_as_json(data, output_path)
 
