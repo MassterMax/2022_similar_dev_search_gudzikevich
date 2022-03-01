@@ -37,5 +37,11 @@
 ```shell
 !git clone https://github.com/scikit-learn/scikit-learn 
 
-PYTHONPATH=./ python3 devsearch/cli/run.py extract /mnt/c/Users/maxma/Documents/GitHub/scikit-learn devsearch/preprocessing/output.json
+PYTHONPATH=./ python3 devsearch/cli/run.py extract /mnt/c/Users/maxma/Documents/GitHub/scikit-learn devsearch/preprocessing/output.jsonl
+```
+
+
+## Для получения распределения stargazers:
+```shell
+PYTHONPATH=./ python3 devsearch/cli/run.py extract-stargazers scikit-learn/scikit-learn devsearch/github_api/output.json -tkn $access_token
 ```
