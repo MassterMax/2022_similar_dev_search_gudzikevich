@@ -71,33 +71,36 @@ def handle_entry(entry: WalkEntry, repo: Repo) -> List[Dict[str, Any]]:
     commit_sha = commit.id.decode()
 
     for change_sequence in entry.changes():
-        try:
-            # now we handle one file
-            if not isinstance(change_sequence, list):
-                change_sequence = [change_sequence]
+        # now we handle one file
+        if not isinstance(change_sequence, list):
+            change_sequence = [change_sequence]
 
-            # now we handle each change of one file
-            for change in change_sequence:
-                file_name = change.new.path or change.old.path
-                file_name = file_name.decode()
+        # now we handle each change of one file
+        for change in change_sequence:
+            file_name = change.new.path or change.old.path
+            file_name = file_name.decode()
 
-                # we skip binary files
-                if is_binary(f"{repo.path}/{file_name}"):
-                    continue
+            # we skip binary files
+            if is_binary(f"{repo.path}/{file_name}"):
+                continue
 
-                path = f"{repo_url}/blob/{commit_sha}/{file_name}"
-                blob_id = change.new.sha or change.old.sha
-                blob_id = blob_id.decode()
+            path = f"{repo_url}/blob/{commit_sha}/{file_name}"
+            blob_id = change.new.sha or change.old.sha
+            blob_id = blob_id.decode()
 
-                new_entity = {"author": author,
-                              "commit_sha": commit_sha,
-                              "path": path,
-                              "repo_url": repo_url,
-                              "blob_id": blob_id}
+            new_entity = {"author": author,
+                          "commit_sha": commit_sha,
+                          "path": path,
+                          "repo_url": repo_url,
+                          "blob_id": blob_id}
+
+            try:
                 new_entity.update(get_change_differences(repo, change))
-                yield new_entity
-        except UnicodeDecodeError as e:
-            logger.error(e)
+            except UnicodeDecodeError as e:
+                logger.error(f"exception in repository - {repo_url}, file - {path}, cause: {e}")
+                continue
+
+            yield new_entity
 
 
 def extract_repo(local_path: str) -> Iterator[List[Dict[str, Any]]]:
