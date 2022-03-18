@@ -13,8 +13,8 @@ def cli():
 
 
 @cli.command()
-@click.argument("local_path", type=click.Path(exists=True))
-@click.argument("output_path", type=click.Path())
+@click.argument("local-path", type=click.Path(exists=True))
+@click.argument("output-path", type=click.Path())
 def extract(local_path: str, output_path: str) -> None:
     """
     A command to extract info about commits from one repository
@@ -28,10 +28,10 @@ def extract(local_path: str, output_path: str) -> None:
 
 
 @cli.command()
-@click.argument("repo_name")
-@click.argument("output_path", type=click.Path())
-@click.option('--access_token', '-t', default=None)
-@click.option('--token_env_key', '-e', default=None)
+@click.argument("repo-name")
+@click.argument("output-path", type=click.Path())
+@click.option('--access-token', '-t', default=None)
+@click.option('--token-env-key', '-e', default=None)
 def extract_stargazers(repo_name: str, output_path: str, access_token: str, token_env_key: str) -> None:
     """
     A method that calls process_stargazers
