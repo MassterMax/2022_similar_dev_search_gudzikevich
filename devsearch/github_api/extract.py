@@ -47,14 +47,14 @@ def process_stargazers(repo_name: str,
     Returns: {repo_url: n_stargazers}
     """
     def handle_rate_limit_exception(exception: RateLimitExceededException):
-        logger.exception(f"limit when tried to call GitHub api - {exception}")
+        logger.exception(f"Limit when tried to call GitHub api - {exception}")
         time.sleep(get_time_to_limit_reset(g) + 10)
 
     token = access_token or os.getenv(token_env_key)
 
     # make sure user pass access_token or $token_env_key exists
     if token is None:
-        raise ValueError("you should specify access_token or token_env_key")
+        raise ValueError("You should specify access_token or token_env_key")
 
     repo_to_stars = Counter()
     g = Github(token)
@@ -66,7 +66,7 @@ def process_stargazers(repo_name: str,
         except RateLimitExceededException as e:
             handle_rate_limit_exception(e)
         except BadCredentialsException as e:
-            raise ValueError(f"wrong token provided - {token}, exception - {e}")
+            raise ValueError(f"Wrong token provided - {token}, exception - {e}")
 
     repo._requester.per_page = requests_per_page
 
@@ -79,6 +79,6 @@ def process_stargazers(repo_name: str,
         except RateLimitExceededException as e:
             handle_rate_limit_exception(e)
         except GithubException as e:
-            logger.exception(f"github exception - {e}")
+            logger.exception(f"Github exception - {e}")
 
     return dict(repo_to_stars.most_common(n_top_repos))
