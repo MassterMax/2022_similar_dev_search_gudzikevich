@@ -3,3 +3,4 @@ dulwich~=0.20.32
 typing~=3.7.4.3
 binaryornot~=0.4.4
 tqdm~=4.62.3
+PyGithub~=1.55

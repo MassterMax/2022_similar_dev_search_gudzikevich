@@ -97,7 +97,7 @@ def handle_entry(entry: WalkEntry, repo: Repo) -> List[Dict[str, Any]]:
             try:
                 new_entity.update(get_change_differences(repo, change))
             except UnicodeDecodeError as e:
-                logger.error(f"exception in repository - {repo_url}, file - {path}, cause: {e}")
+                logger.error(f"Exception in repository - {repo_url}, file - {path}, cause: {e}")
                 continue
 
             yield new_entity
