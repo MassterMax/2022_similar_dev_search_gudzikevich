@@ -4,7 +4,7 @@ import logging
 import os
 import time
 
-from github import Github, GithubException, RateLimitExceededException
+from github import BadCredentialsException, Github, GithubException, RateLimitExceededException
 from typing import Dict
 
 from tqdm import tqdm
@@ -65,6 +65,8 @@ def process_stargazers(repo_name: str,
             repo = g.get_repo(repo_name)
         except RateLimitExceededException as e:
             handle_rate_limit_exception(e)
+        except BadCredentialsException as e:
+            raise ValueError(f"wrong token provided - {token}, exception - {e}")
 
     repo._requester.per_page = requests_per_page
 
