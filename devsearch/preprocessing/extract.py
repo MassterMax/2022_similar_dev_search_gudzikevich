@@ -121,7 +121,7 @@ def extract_repo(local_path: str) -> Iterator[List[Dict[str, Any]]]:
                      "added": rows that were added,
                      "deleted": rows that were deleted}
 
-         Method returns [change_1, change_2, ..., change_n]
+         Method yields [change_1, change_2, ..., change_n]
     """
     repo = Repo(local_path)
 

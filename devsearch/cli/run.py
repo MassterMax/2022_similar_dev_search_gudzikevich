@@ -15,7 +15,7 @@ def cli():
 @cli.command()
 @click.argument("local-path", type=click.Path(exists=True))
 @click.argument("output-path", type=click.Path())
-def extract(local_path: str, output_path: str) -> None:
+def extract_commit_info(local_path: str, output_path: str) -> None:
     """
     A command to extract info about commits from one repository
     Args:
