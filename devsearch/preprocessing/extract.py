@@ -1,4 +1,3 @@
-from collections import defaultdict
 import difflib
 import json
 import logging
@@ -11,42 +10,49 @@ from dulwich.repo import Repo
 from dulwich.walk import WalkEntry
 from tqdm import tqdm
 
+from devsearch.enry.extract_language_data import get_code_language
+from devsearch.tree_sitter.parsing import get_identifiers_with_query
+
 logger = logging.getLogger(__name__)
 
 
-def get_change_differences(repo: Repo, change: TreeChange) -> Dict[str, int]:
+def get_change_differences(repo: Repo, language: str, change: TreeChange) -> Dict[str, Union[int, List[str]]]:
     """
     A method that gives differences in one change
     Args:
         repo: repo that we handle
+        language: language of change code
         change: change of this repo
-    Returns: {"added": rows_added, "deleted": rows_deleted}
+    Returns: {"rows_added": rows_added, "rows_deleted": rows_deleted, "identifiers": list_of_added_identifiers}
     """
-    counter = defaultdict(int)
+    change_data = {"rows_added": 0, "rows_deleted": 0, "identifiers": []}
 
     if change.old.sha is None:
         # file was created
         new_blob: ShaFile = repo.get_object(change.new.sha)
-        counter["added"] = len(new_blob.data.decode().splitlines())
-        counter["rows_deleted"] = 0
+        change_data["rows_added"] = len(new_blob.data.decode().splitlines())
+        change_data["identifiers"] = list(get_identifiers_with_query(language, new_blob.data))
     elif change.new.sha is None:
         # file was deleted
         old_blob: ShaFile = repo.get_object(change.old.sha)
-        counter["added"] = 0
-        counter["rows_deleted"] = len(old_blob.data.decode().splitlines())
+        change_data["rows_deleted"] = len(old_blob.data.decode().splitlines())
     if not (change.old.sha is None or change.new.sha is None):
         old_blob: ShaFile = repo.get_object(change.old.sha)
         new_blob: ShaFile = repo.get_object(change.new.sha)
 
         differences = difflib.unified_diff(old_blob.data.decode().splitlines(), new_blob.data.decode().splitlines())
 
+        added_code = ""
         for el in differences:
             if el.startswith("+") and not el.startswith("++"):
-                counter["added"] += 1
+                change_data["rows_added"] += 1
+                added_code += el[1:] + "\n"
             elif el.startswith("-") and not el.startswith("--"):
-                counter["deleted"] += 1
+                change_data["rows_deleted"] += 1
 
-    return counter
+        change_data["identifiers"] = list(get_identifiers_with_query(language, str.encode(added_code)))
+
+    return change_data
 
 
 def handle_entry(entry: WalkEntry, repo: Repo) -> List[Dict[str, Any]]:
@@ -86,16 +92,19 @@ def handle_entry(entry: WalkEntry, repo: Repo) -> List[Dict[str, Any]]:
 
             path = f"{repo_url}/blob/{commit_sha}/{file_name}"
             blob_id = change.new.sha or change.old.sha
+            blob = repo.get_object(blob_id)
             blob_id = blob_id.decode()
 
+            language = get_code_language(file_name, blob.data)
             new_entity = {"author": author,
                           "commit_sha": commit_sha,
                           "path": path,
                           "repo_url": repo_url,
-                          "blob_id": blob_id}
+                          "blob_id": blob_id,
+                          "language": language}
 
             try:
-                new_entity.update(get_change_differences(repo, change))
+                new_entity.update(get_change_differences(repo, language, change))
             except UnicodeDecodeError as e:
                 logger.error(f"Exception in repository - {repo_url}, file - {path}, cause: {e}")
                 continue
