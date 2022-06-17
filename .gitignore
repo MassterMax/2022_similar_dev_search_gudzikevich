@@ -154,3 +154,5 @@ cython_debug/
 #.idea/
 *.json
 *.jsonl
+/devsearch/tree_sitter/test.py
+/devsearch/tree_sitter/hello_world.go
