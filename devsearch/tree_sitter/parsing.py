@@ -11,9 +11,9 @@ LANGUAGE_TO_QUERY = {
         (identifier) @all_identifiers
     )""",
     "go": """
-           (short_var_declaration left: (expression_list (identifier)) @var_name)
-           (type_spec name: (type_identifier) @class_name)
-           (function_declaration name: (identifier) @func_name)
+           (short_var_declaration left: (expression_list (identifier)) @variable)
+           (type_spec name: (type_identifier) @class)
+           (function_declaration name: (identifier) @function)
            """,
     "javascript": """(
         (identifier) @all_identifiers
@@ -46,7 +46,3 @@ def get_identifiers_with_query(language: str, source_code: bytes) -> Iterator[st
     except AttributeError:
         # if tree-sitter can not find the language
         logger.error(f"tree-sitter can't find parser for language: {language}")
-
-# todo - languages identifiers names:
-# js - identifier, property_identifier
-# go - field_identifier, identifier, etc
