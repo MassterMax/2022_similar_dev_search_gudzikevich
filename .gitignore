@@ -156,3 +156,4 @@ cython_debug/
 *.jsonl
 /devsearch/tree_sitter/test.py
 /devsearch/tree_sitter/hello_world.go
+!/devsearch/tree_sitter/parsers.json

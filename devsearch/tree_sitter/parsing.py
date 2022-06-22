@@ -6,6 +6,23 @@ from devsearch.tree_sitter.setup import parser_library
 
 logger = logging.getLogger(__name__)
 
+LANGUAGE_TO_QUERY = {
+    "python": """(
+        (identifier) @all_identifiers
+    )""",
+    "go": """
+           (short_var_declaration left: (expression_list (identifier)) @variable)
+           (type_spec name: (type_identifier) @class)
+           (function_declaration name: (identifier) @function)
+           """,
+    "javascript": """(
+        (identifier) @all_identifiers
+    )""",
+    "default": """(
+    (identifier) @all_identifiers
+    )"""
+}
+
 
 @lru_cache(maxsize=None)
 def get_identifiers_with_query(language: str, source_code: bytes) -> Iterator[str]:
@@ -19,10 +36,7 @@ def get_identifiers_with_query(language: str, source_code: bytes) -> Iterator[st
 
     try:
         parser = parser_library.get_parser(language)
-        query = parser_library.get_language(language).query(
-            """(
-              (identifier) @constant
-            )""")  # todo maybe specify identifier to any language
+        query = parser_library.get_language(language).query(LANGUAGE_TO_QUERY.get(language, "default"))
 
         captures = query.captures(parser.parse(source_code).root_node)
         for capture in captures:
@@ -32,7 +46,3 @@ def get_identifiers_with_query(language: str, source_code: bytes) -> Iterator[st
     except AttributeError:
         # if tree-sitter can not find the language
         logger.error(f"tree-sitter can't find parser for language: {language}")
-
-# todo - languages identifiers names:
-# js - identifier, property_identifier
-# go - field_identifier, identifier, etc
